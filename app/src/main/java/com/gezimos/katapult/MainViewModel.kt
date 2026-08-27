@@ -360,6 +360,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun launchApp(context: Context, app: AppModel) {
+        // Work-profile (and other non-main-user) apps cannot be launched with a
+        // plain ComponentName Intent — that only resolves within the current
+        // user. Route them through LauncherApps.startMainActivity with the
+        // correct UserHandle resolved from the stored serial number.
+        if (app.userSerial != 0L) {
+            try {
+                val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE)
+                    as? android.content.pm.LauncherApps
+                val userManager = context.getSystemService(Context.USER_SERVICE)
+                    as? android.os.UserManager
+                val handle = userManager?.getUserForSerialNumber(app.userSerial)
+                if (launcherApps != null && handle != null) {
+                    val component = ComponentName(app.packageName, app.activityName)
+                    launcherApps.startMainActivity(component, handle, null, null)
+                    (context as? Activity)?.overridePendingTransition(0, 0)
+                    return
+                }
+            } catch (_: Exception) {
+                // fall through to the legacy path below
+            }
+        }
         launchPackage(context, app.packageName, app.activityName)
     }
 

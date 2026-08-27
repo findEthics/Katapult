@@ -138,14 +138,20 @@ object IconUtility {
         }
     }
 
-    fun loadIcon(context: Context, packageName: String, activityClass: String, sizePx: Int): Bitmap? {
+    fun loadIcon(
+        context: Context,
+        packageName: String,
+        activityClass: String,
+        sizePx: Int,
+        userSerial: Long = 0L
+    ): Bitmap? {
         if (packageName.isBlank() || sizePx <= 0) return null
 
         val override = context
             .getSharedPreferences("katapult_prefs", Context.MODE_PRIVATE)
             .getString("icon_override_$packageName", null)
 
-        val cacheKey = "$packageName:$activityClass:$sizePx:${override ?: ""}"
+        val cacheKey = "$packageName:$activityClass:$sizePx:$userSerial:${override ?: ""}"
         bitmapCache.get(cacheKey)?.let { return it }
 
         val bitmap = try {
@@ -156,6 +162,12 @@ object IconUtility {
             } else if (customRes != null) {
                 val drawable = ContextCompat.getDrawable(context, customRes)!!
                 renderBundledIcon(drawable, sizePx)
+            } else if (userSerial != 0L) {
+                // Work-profile app: its package is not resolvable via this user's
+                // PackageManager. Fetch the (already badged) icon through LauncherApps
+                // for the owning UserHandle and render it as a plain bitmap.
+                val profileIcon = loadProfileIcon(context, packageName, activityClass, userSerial, sizePx)
+                profileIcon ?: return null
             } else {
                 val appIcon = context.packageManager.getApplicationIcon(packageName)
                 val monoLayer = if (appIcon is AdaptiveIconDrawable) {
@@ -180,6 +192,33 @@ object IconUtility {
 
         if (bitmap != null) bitmapCache.put(cacheKey, bitmap)
         return bitmap
+    }
+
+    private fun loadProfileIcon(
+        context: Context,
+        packageName: String,
+        activityClass: String,
+        userSerial: Long,
+        sizePx: Int
+    ): Bitmap? {
+        return try {
+            val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE)
+                as? android.content.pm.LauncherApps ?: return null
+            val userManager = context.getSystemService(Context.USER_SERVICE)
+                as? android.os.UserManager ?: return null
+            val handle = userManager.getUserForSerialNumber(userSerial) ?: return null
+
+            val activities = launcherApps.getActivityList(packageName, handle)
+            val match = activities.firstOrNull {
+                it.componentName.className == activityClass
+            } ?: activities.firstOrNull() ?: return null
+
+            val density = context.resources.displayMetrics.densityDpi
+            val drawable = match.getBadgedIcon(density)
+            drawableToBitmap(drawable, sizePx)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun loadOverrideBitmap(context: Context, override: String, sizePx: Int): Bitmap? {
@@ -308,7 +347,7 @@ object IconUtility {
 
     fun preloadIcons(context: Context, apps: List<com.gezimos.katapult.model.AppModel>, sizePx: Int) {
         for (app in apps) {
-            loadIcon(context, app.packageName, app.activityName, sizePx)
+            loadIcon(context, app.packageName, app.activityName, sizePx, app.userSerial)
         }
     }
 

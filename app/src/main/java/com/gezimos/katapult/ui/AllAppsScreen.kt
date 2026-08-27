@@ -529,8 +529,8 @@ private fun AppGridItem(
 ) {
     val context = LocalContext.current
     val sizePx = remember { (IconSize.value * context.resources.displayMetrics.density).toInt() }
-    val bitmap = remember(app.packageName, app.activityName, refresh) {
-        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx)
+    val bitmap = remember(app.packageName, app.activityName, app.userSerial, refresh) {
+        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx, app.userSerial)
     }
     val isRounded = LocalIconShape.current != CircleShape
 

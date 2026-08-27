@@ -494,8 +494,8 @@ private fun AppPickerDialog(
                     val app = pageApps[i]
                     val context = LocalContext.current
                     val sizePx = remember { (36 * context.resources.displayMetrics.density).toInt() }
-                    val bitmap = remember(app.packageName) {
-                        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx)
+                    val bitmap = remember(app.packageName, app.userSerial) {
+                        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx, app.userSerial)
                     }
                     Row(
                         modifier = Modifier
