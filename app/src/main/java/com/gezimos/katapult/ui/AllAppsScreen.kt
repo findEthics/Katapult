@@ -40,6 +40,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -92,6 +94,15 @@ fun AllAppsScreen(viewModel: MainViewModel, iconPicker: ActivityResultLauncher<A
 
     var dragAccumulator by remember { mutableFloatStateOf(0f) }
 
+    // Normal drawer = search-driven list: shows nothing until the user types.
+    // The icon grid below is retained ONLY for reorder mode.
+    if (!viewModel.reorderMode) {
+        AppSearchList(
+            viewModel = viewModel,
+            onLaunch = { app -> viewModel.launchApp(context, app) },
+            onLongPress = { app -> viewModel.contextMenuApp = app },
+        )
+    } else
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -513,6 +524,144 @@ private fun RenameDialog(
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AppSearchList(
+    viewModel: MainViewModel,
+    onLaunch: (AppModel) -> Unit,
+    onLongPress: (AppModel) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    // Auto-focus the search field and pop the keyboard as soon as the drawer opens.
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
+
+    val trimmed = query.trim()
+    // Show nothing until the user starts typing; then filter by label substring.
+    val results = remember(trimmed, viewModel.orderedApps) {
+        if (trimmed.isEmpty()) emptyList()
+        else viewModel.orderedApps.filter { it.label.contains(trimmed, ignoreCase = true) }
+            .sortedWith(
+                compareByDescending<AppModel> { it.label.startsWith(trimmed, ignoreCase = true) }
+                    .thenBy { it.label.lowercase() }
+            )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(LocalSurface.current)
+            .then(if (!viewModel.prefs.hideStatusBar) Modifier.statusBarsPadding() else Modifier)
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp),
+    ) {
+        // Search field
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp, bottom = 8.dp),
+        ) {
+            BasicTextField(
+                value = query,
+                onValueChange = { query = it },
+                singleLine = true,
+                textStyle = TextStyle(
+                    fontSize = 22.sp,
+                    fontFamily = LatoFamily,
+                    color = LocalInk.current,
+                ),
+                cursorBrush = SolidColor(LocalInk.current),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    imeAction = androidx.compose.ui.text.input.ImeAction.Go,
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onGo = { results.firstOrNull()?.let(onLaunch) },
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                decorationBox = { inner ->
+                    if (query.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.search_hint),
+                            fontSize = 22.sp,
+                            fontFamily = LatoFamily,
+                            color = LocalInk.current.copy(alpha = 0.4f),
+                        )
+                    }
+                    inner()
+                },
+            )
+        }
+
+        // Results list — empty (blank drawer) until the user types.
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+        ) {
+            items(
+                items = results,
+                key = { "${it.packageName}:${it.userSerial}" },
+            ) { app ->
+                AppListRow(
+                    app = app,
+                    notificationCount = if (viewModel.prefs.notificationIndicators)
+                        viewModel.notificationCounts[app.packageName] ?: 0 else 0,
+                    refresh = viewModel.shortcutRefresh,
+                    onClick = { onLaunch(app) },
+                    onLongClick = { onLongPress(app) },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AppListRow(
+    app: AppModel,
+    notificationCount: Int,
+    refresh: Int = 0,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    val context = LocalContext.current
+    val sizePx = remember { (40.dp.value * context.resources.displayMetrics.density).toInt() }
+    val bitmap = remember(app.packageName, app.activityName, app.userSerial, refresh) {
+        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx, app.userSerial)
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            AppIconCircle(bitmap = bitmap, size = 40.dp, borderWidth = 1.5.dp)
+            if (notificationCount > 0) {
+                NotificationBadge(
+                    count = notificationCount,
+                    modifier = Modifier.align(Alignment.TopEnd),
+                )
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = app.label,
+            fontSize = 20.sp,
+            fontFamily = LatoFamily,
+            color = LocalInk.current,
+            maxLines = 1,
+            textAlign = TextAlign.Start,
+        )
     }
 }
 
