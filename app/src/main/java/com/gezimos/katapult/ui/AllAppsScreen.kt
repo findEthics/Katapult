@@ -545,13 +545,19 @@ private fun AppSearchList(
     }
 
     val trimmed = query.trim()
-    // Show nothing until the user starts typing; then filter by label substring.
+    // Show nothing until the user starts typing. Keep the closest textual matches first:
+    // reverseLayout below anchors this first result directly above the search field.
     val results = remember(trimmed, viewModel.orderedApps) {
         if (trimmed.isEmpty()) emptyList()
         else viewModel.orderedApps.filter { it.label.contains(trimmed, ignoreCase = true) }
             .sortedWith(
-                compareByDescending<AppModel> { it.label.startsWith(trimmed, ignoreCase = true) }
-                    .thenBy { it.label.lowercase() }
+                compareBy<AppModel> {
+                    when {
+                        it.label.equals(trimmed, ignoreCase = true) -> 0
+                        it.label.startsWith(trimmed, ignoreCase = true) -> 1
+                        else -> 2
+                    }
+                }.thenBy { it.label.lowercase() }
             )
     }
 
@@ -566,6 +572,7 @@ private fun AppSearchList(
         // Results list — empty (blank drawer) until the user types.
         LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f),
+            reverseLayout = true,
         ) {
             items(
                 items = results,

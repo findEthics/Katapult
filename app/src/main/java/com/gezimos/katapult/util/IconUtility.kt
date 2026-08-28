@@ -159,15 +159,14 @@ object IconUtility {
             val customRes = customIcons[packageName]
             if (overrideBitmap != null) {
                 overrideBitmap
+            } else if (userSerial != 0L) {
+                // Always obtain work-profile icons through LauncherApps. It applies the
+                // platform's work badge; checking bundled artwork first made WhatsApp
+                // bypass this path and appear unbadged.
+                loadProfileIcon(context, packageName, activityClass, userSerial, sizePx) ?: return null
             } else if (customRes != null) {
                 val drawable = ContextCompat.getDrawable(context, customRes)!!
                 renderBundledIcon(drawable, sizePx)
-            } else if (userSerial != 0L) {
-                // Work-profile app: its package is not resolvable via this user's
-                // PackageManager. Fetch the (already badged) icon through LauncherApps
-                // for the owning UserHandle and render it as a plain bitmap.
-                val profileIcon = loadProfileIcon(context, packageName, activityClass, userSerial, sizePx)
-                profileIcon ?: return null
             } else {
                 val appIcon = context.packageManager.getApplicationIcon(packageName)
                 val monoLayer = if (appIcon is AdaptiveIconDrawable) {
