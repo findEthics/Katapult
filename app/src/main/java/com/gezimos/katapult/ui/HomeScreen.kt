@@ -198,10 +198,11 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     isCharging = viewModel.isCharging,
                     showBattery = viewModel.prefs.showBattery,
                     islandsActive = viewModel.prefs.homeIslands,
+                    clockColor = Color(0xFF5A5A9C),
                     onClockClick = {
                         val saved = viewModel.prefs.loadShortcut("clock")
                         if (saved != null) {
-                            viewModel.launchPackage(context, saved.first, saved.second)
+                            viewModel.launchShortcut(context, "clock")
                         } else if (!viewModel.prefs.disableHomeEditing) {
                             pickerSlot = "clock"
                         }
@@ -210,7 +211,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     onDateClick = {
                         val saved = viewModel.prefs.loadShortcut("calendar")
                         if (saved != null) {
-                            viewModel.launchPackage(context, saved.first, saved.second)
+                            viewModel.launchShortcut(context, "calendar")
                         } else if (!viewModel.prefs.disableHomeEditing) {
                             pickerSlot = "calendar"
                         }
@@ -429,7 +430,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
             title = title,
             onDismiss = { pickerSlot = null },
             onSelected = { app ->
-                viewModel.saveShortcut(slot, app.packageName, app.activityName)
+                viewModel.saveShortcut(slot, app.packageName, app.activityName, app.userSerial)
                 viewModel.shortcutRefresh++
                 pickerSlot = null
             },
@@ -726,10 +727,11 @@ private fun ShortcutItem(
     val context = LocalContext.current
     val pkg = remember(refresh) { viewModel.getShortcutPackage(slot) }
     val activityName = remember(refresh) { viewModel.getShortcutActivity(slot) }
+    val userSerial = remember(refresh) { viewModel.getShortcutUserSerial(slot) }
     val label = remember(refresh) { viewModel.getShortcutLabel(slot, defaultLabel) }
     val sizePx = remember { (IconSize.value * context.resources.displayMetrics.density).toInt() }
-    val bitmap = remember(pkg, activityName, refresh) {
-        if (pkg != null) IconUtility.loadIcon(context, pkg, activityName, sizePx) else null
+    val bitmap = remember(pkg, activityName, userSerial, refresh) {
+        if (pkg != null) IconUtility.loadIcon(context, pkg, activityName, sizePx, userSerial) else null
     }
 
     val notificationCount = if (viewModel.prefs.notificationIndicators)

@@ -402,7 +402,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun launchShortcut(context: Context, slot: String) {
         val saved = prefs.loadShortcut(slot)
         if (saved != null) {
-            launchPackage(context, saved.first, saved.second)
+            launchApp(
+                context,
+                AppModel(
+                    packageName = saved.first,
+                    activityName = saved.second,
+                    label = getShortcutLabel(slot, ""),
+                    userSerial = prefs.loadShortcutUserSerial(slot),
+                ),
+            )
             return
         }
         val defaultPkg = getDefaultPackageForSlot(slot)
@@ -435,8 +443,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun saveShortcut(slot: String, packageName: String, activityName: String) {
-        prefs.saveShortcut(slot, packageName, activityName)
+    fun getShortcutUserSerial(slot: String): Long =
+        if (prefs.loadShortcut(slot) != null) prefs.loadShortcutUserSerial(slot) else 0L
+
+    fun saveShortcut(slot: String, packageName: String, activityName: String, userSerial: Long) {
+        prefs.saveShortcut(slot, packageName, activityName, userSerial)
     }
 
     private fun getDefaultPackageForSlot(slot: String): String? {

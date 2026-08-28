@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +51,7 @@ fun ColumnScope.ClockDisplay(
     isCharging: Boolean,
     showBattery: Boolean,
     islandsActive: Boolean,
+    clockColor: Color = LocalInk.current,
     onClockClick: (() -> Unit)? = null,
     onClockLongClick: (() -> Unit)? = null,
     onDateClick: (() -> Unit)? = null,
@@ -137,7 +139,7 @@ fun ColumnScope.ClockDisplay(
             fontSize = 72.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = LatoFamily,
-            color = LocalInk.current,
+            color = clockColor,
         )
         if (clockAmPm != null) {
             Spacer(Modifier.width(4.dp))
@@ -146,7 +148,7 @@ fun ColumnScope.ClockDisplay(
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = LatoFamily,
-                color = LocalInk.current,
+                color = clockColor,
             )
         }
     }

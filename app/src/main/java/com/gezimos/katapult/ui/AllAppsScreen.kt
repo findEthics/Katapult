@@ -563,11 +563,30 @@ private fun AppSearchList(
             .navigationBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        // Search field
+        // Results list — empty (blank drawer) until the user types.
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+        ) {
+            items(
+                items = results,
+                key = { "${it.packageName}:${it.userSerial}" },
+            ) { app ->
+                AppListRow(
+                    app = app,
+                    notificationCount = if (viewModel.prefs.notificationIndicators)
+                        viewModel.notificationCounts[app.packageName] ?: 0 else 0,
+                    refresh = viewModel.shortcutRefresh,
+                    onClick = { onLaunch(app) },
+                    onLongClick = { onLongPress(app) },
+                )
+            }
+        }
+
+        // Keep search at the bottom so it stays immediately above the keyboard.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp, bottom = 8.dp),
+                .padding(top = 8.dp, bottom = 12.dp),
         ) {
             BasicTextField(
                 value = query,
@@ -600,25 +619,6 @@ private fun AppSearchList(
                     inner()
                 },
             )
-        }
-
-        // Results list — empty (blank drawer) until the user types.
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-        ) {
-            items(
-                items = results,
-                key = { "${it.packageName}:${it.userSerial}" },
-            ) { app ->
-                AppListRow(
-                    app = app,
-                    notificationCount = if (viewModel.prefs.notificationIndicators)
-                        viewModel.notificationCounts[app.packageName] ?: 0 else 0,
-                    refresh = viewModel.shortcutRefresh,
-                    onClick = { onLaunch(app) },
-                    onLongClick = { onLongPress(app) },
-                )
-            }
         }
     }
 }

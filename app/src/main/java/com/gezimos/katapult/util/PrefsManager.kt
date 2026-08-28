@@ -21,10 +21,11 @@ class PrefsManager(context: Context) {
         return (0 until array.length()).map { array.getString(it) }
     }
 
-    fun saveShortcut(slot: String, packageName: String, activityName: String) {
+    fun saveShortcut(slot: String, packageName: String, activityName: String, userSerial: Long) {
         prefs.edit()
             .putString("${slot}_package", packageName)
             .putString("${slot}_activity", activityName)
+            .putLong("${slot}_user_serial", userSerial)
             .apply()
     }
 
@@ -33,6 +34,9 @@ class PrefsManager(context: Context) {
         val activity = prefs.getString("${slot}_activity", null) ?: return null
         return Pair(pkg, activity)
     }
+
+    // Existing shortcuts predate work-profile support; no saved serial means personal profile.
+    fun loadShortcutUserSerial(slot: String): Long = prefs.getLong("${slot}_user_serial", 0L)
 
     fun reconcileOrder(savedOrder: List<String>, currentApps: List<AppModel>): List<AppModel> {
         val appMap = currentApps.associateBy { it.packageName }.toMutableMap()
