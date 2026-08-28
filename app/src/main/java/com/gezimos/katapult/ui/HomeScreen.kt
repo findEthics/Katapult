@@ -198,7 +198,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     isCharging = viewModel.isCharging,
                     showBattery = viewModel.prefs.showBattery,
                     islandsActive = viewModel.prefs.homeIslands,
-                    clockColor = Color(0xFF5A5A9C),
+                    clockColor = Color(0xFFFC7703),
                     onClockClick = {
                         val saved = viewModel.prefs.loadShortcut("clock")
                         if (saved != null) {
