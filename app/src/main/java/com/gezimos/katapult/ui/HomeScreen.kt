@@ -77,6 +77,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
+import com.gezimos.katapult.service.TapToSleepAccessibilityService
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -118,6 +119,9 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
         modifier = Modifier
             .fillMaxSize()
             .background(LocalSurface.current)
+            .pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = { TapToSleepAccessibilityService.lockScreen() })
+            }
             .pointerInput(viewModel.prefs.verticalAppGestures) {
                 // One handler for both: a single-finger swipe opens All Apps, a two-finger
                 // Pinch handling is retained for home-screen interactions.
@@ -177,9 +181,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                         detectTapGestures(
                             onLongPress = { showMenu = true },
                             onDoubleTap = {
-                                if (viewModel.prefs.doubleTapBrightness) {
-                                    BrightnessHelper.toggleBrightness(context, viewModel.prefs)
-                                }
+                                TapToSleepAccessibilityService.lockScreen()
                             },
                         )
                     },
