@@ -40,6 +40,6 @@ fun App(
             Screen.ALL_APPS -> AllAppsScreen(viewModel, iconPicker)
             Screen.SETTINGS -> SettingsScreen(viewModel)
         }
-        com.gezimos.katapult.lockscreen.LockscreenReEnableSheet(viewModel)
+
     }
 }

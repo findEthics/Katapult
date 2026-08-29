@@ -37,8 +37,8 @@ import com.gezimos.katapult.R
 
 /**
  * The home clock block — alarm/battery status, the big clock with AM/PM, and the date,
- * with optional "islands" behind each. Shared by the home screen and the screensaver so
- * they render identically. Click handlers are optional (the screensaver passes none).
+ * with optional "islands" behind each. Shared by the home screen
+ * they render identically. Click handlers are optional.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

@@ -82,34 +82,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var roundedIcons by mutableStateOf(prefs.roundedIcons)
     var darkMode by mutableStateOf(prefs.darkMode)
 
-    // Experimental lockscreen widget: prompt once per process to re-enable the
-    // accessibility service when it got dropped (happens after app updates).
-    var showLockscreenReEnable by mutableStateOf(false)
-    private var lockscreenReEnableChecked = false
-
-    fun checkLockscreenService(context: Context) {
-        if (lockscreenReEnableChecked) return
-        lockscreenReEnableChecked = true
-        val needsService = prefs.lockscreenWidget ||
-            (prefs.screensaverEnabled && prefs.screensaverOnPower)
-        if (needsService &&
-            !com.gezimos.katapult.lockscreen.LockscreenWidgetService.isEnabled(context)
-        ) {
-            showLockscreenReEnable = true
-        }
-    }
-
-    // Experimental screensaver: opens the full-screen screensaver activity (zero setup).
-    fun startScreensaver(context: Context) {
-        try {
-            context.startActivity(
-                Intent(context, com.gezimos.katapult.lockscreen.ScreensaverActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
-            )
-        } catch (_: Exception) {}
-    }
-
-    val gridColumns = 3
+val gridColumns = 3
     var appsPerPage by mutableIntStateOf(12)
         private set
     val totalPages: Int
@@ -213,9 +186,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadApps() {
         val currentApps = AppLoader.loadApps(ctx, showSelf = prefs.showKatapultIcon)
-        val hidden = prefs.getHiddenApps()
-        val visible = currentApps.filter { it.packageName !in hidden }
-        val renamed = visible.map { app ->
+        val renamed = currentApps.map { app ->
             val customName = prefs.getAppRename(app.packageName)
             if (customName != null) app.copy(label = customName) else app
         }
@@ -310,13 +281,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- App actions ---
 
-    fun hideApp(packageName: String) {
-        prefs.hideApp(packageName)
-        contextMenuApp = null
-        loadApps()
-    }
-
-    fun renameApp(packageName: String, newName: String) {
+fun renameApp(packageName: String, newName: String) {
         prefs.setAppRename(packageName, newName.ifBlank { null })
         contextMenuApp = null
         showRenameDialog = false
@@ -540,24 +505,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         wallpaperBitmap = null
     }
 
-    fun setScreensaverWallpaper(context: Context, uri: Uri) {
-        try {
-            val input = context.contentResolver.openInputStream(uri) ?: return
-            val bitmap = BitmapFactory.decodeStream(input)
-            input.close()
-            if (bitmap == null) return
-            val file = File(ctx.filesDir, "screensaver_wallpaper.png")
-            file.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-            prefs.screensaverWallpaperPath = file.absolutePath
-        } catch (_: Exception) {}
-    }
-
-    fun clearScreensaverWallpaper() {
-        prefs.screensaverWallpaperPath?.let { File(it).delete() }
-        prefs.screensaverWallpaperPath = null
-    }
 
     // --- Icon overrides ---
 

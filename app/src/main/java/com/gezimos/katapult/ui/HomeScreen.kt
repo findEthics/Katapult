@@ -120,7 +120,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
             .background(LocalSurface.current)
             .pointerInput(viewModel.prefs.verticalAppGestures) {
                 // One handler for both: a single-finger swipe opens All Apps, a two-finger
-                // pinch-in (zoom out) opens the screensaver. Kept together so the pinch and
+                // Pinch handling is retained for home-screen interactions.
                 // the swipe can't fire each other.
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
@@ -137,11 +137,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                             val distance = (pressed[0].position - pressed[1].position).getDistance()
                             if (pinchStart == 0f) {
                                 pinchStart = distance
-                            } else if (!pinchFired && viewModel.prefs.screensaverEnabled && pinchStart > 80.dp.toPx() && distance < pinchStart * 0.6f) {
-                                pinchFired = true
-                                viewModel.startScreensaver(context)
-                            }
-                        } else if (!pinch) {
+                            } } else if (!pinch) {
                             val delta = if (viewModel.prefs.verticalAppGestures) {
                                 pressed[0].positionChange().y
                             } else {
@@ -383,10 +379,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     viewModel.navigateTo(Screen.ALL_APPS)
                 }
             }
-            BottomSheetOption(stringResource(R.string.hidden_apps), icon = Icons.Rounded.VisibilityOff) {
-                showMenu = false
-                showHiddenApps = true
-            }
+
             if (viewModel.wallpaperBitmap != null) {
                 BottomSheetOption(stringResource(R.string.clear_wallpaper), icon = Icons.Rounded.Wallpaper) {
                     showMenu = false
@@ -398,16 +391,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     showMenu = false
                 }
             }
-            if (viewModel.prefs.screensaverEnabled) {
-                BottomSheetOption(stringResource(R.string.screensaver), icon = Icons.Rounded.Bedtime) {
-                    showMenu = false
-                    viewModel.startScreensaver(context)
-                }
-            }
-            BottomSheetOption(stringResource(R.string.donate_label), icon = Icons.Rounded.FavoriteBorder) {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.buymeacoffee.com/gezimos")))
-                showMenu = false
-            }
+
         }
     }
 
@@ -437,12 +421,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
         )
     }
 
-    if (showHiddenApps) {
-        HiddenAppsDialog(
-            viewModel = viewModel,
-            onDismiss = { showHiddenApps = false },
-        )
-    }
+
 }
 
 @Composable

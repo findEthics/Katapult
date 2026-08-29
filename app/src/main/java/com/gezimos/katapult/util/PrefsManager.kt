@@ -182,78 +182,6 @@ class PrefsManager(context: Context) {
         get() = prefs.getBoolean(KEY_VERTICAL_APP_GESTURES, false)
         set(value) = prefs.edit().putBoolean(KEY_VERTICAL_APP_GESTURES, value).apply()
 
-    // Experimental lockscreen widget (see .lockscreen package)
-    var lockscreenWidget: Boolean
-        get() = prefs.getBoolean(KEY_LOCKSCREEN_WIDGET, false)
-        set(value) = prefs.edit().putBoolean(KEY_LOCKSCREEN_WIDGET, value).apply()
-
-    // Vertical position of the lockscreen widget in px; -1 = default
-    var lockscreenWidgetY: Int
-        get() = prefs.getInt(KEY_LOCKSCREEN_WIDGET_Y, -1)
-        set(value) = prefs.edit().putInt(KEY_LOCKSCREEN_WIDGET_Y, value).apply()
-
-    // Max visible rows in the lockscreen widget
-    var lockscreenWidgetRows: Int
-        get() = prefs.getInt(KEY_LOCKSCREEN_WIDGET_ROWS, 4)
-        set(value) = prefs.edit().putInt(KEY_LOCKSCREEN_WIDGET_ROWS, value).apply()
-
-    // Lockscreen widget sort: true = latest notification on top, false = oldest on top
-    var lockscreenWidgetLatestFirst: Boolean
-        get() = prefs.getBoolean(KEY_LOCKSCREEN_WIDGET_LATEST_FIRST, true)
-        set(value) = prefs.edit().putBoolean(KEY_LOCKSCREEN_WIDGET_LATEST_FIRST, value).apply()
-
-    var screensaverEnabled: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_ENABLED, false)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_ENABLED, value).apply()
-
-    var screensaverIslands: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_ISLANDS, false)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_ISLANDS, value).apply()
-
-    var screensaverWallpaper: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_WALLPAPER, false)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_WALLPAPER, value).apply()
-
-    var screensaverWallpaperPath: String?
-        get() = prefs.getString(KEY_SCREENSAVER_WALLPAPER_PATH, null)
-        set(value) = prefs.edit().putString(KEY_SCREENSAVER_WALLPAPER_PATH, value).apply()
-
-    var screensaverShowClock: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_SHOW_CLOCK, true)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_SHOW_CLOCK, value).apply()
-
-    var screensaverShowNotifications: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_SHOW_NOTIFICATIONS, true)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_SHOW_NOTIFICATIONS, value).apply()
-
-    var screensaverDoubleTapBrightness: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_DOUBLE_TAP_BRIGHTNESS, false)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_DOUBLE_TAP_BRIGHTNESS, value).apply()
-
-    var screensaverUpdateMode: Int
-        get() = prefs.getInt(KEY_SCREENSAVER_UPDATE_MODE, SCREENSAVER_MODE_AUTO)
-        set(value) = prefs.edit().putInt(KEY_SCREENSAVER_UPDATE_MODE, value).apply()
-
-    var screensaverUpdateMinutes: Int
-        get() = prefs.getInt(KEY_SCREENSAVER_UPDATE_MINUTES, 5)
-        set(value) = prefs.edit().putInt(KEY_SCREENSAVER_UPDATE_MINUTES, value).apply()
-
-    var screensaverEinkRefresh: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_EINK_REFRESH, true)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_EINK_REFRESH, value).apply()
-
-    var screensaverOnPower: Boolean
-        get() = prefs.getBoolean(KEY_SCREENSAVER_ON_POWER, false)
-        set(value) = prefs.edit().putBoolean(KEY_SCREENSAVER_ON_POWER, value).apply()
-
-    // Apps unchecked in "Lockscreen Notification Apps" — excluded from the lockscreen widget
-    fun getLockscreenExcludedApps(): Set<String> =
-        prefs.getStringSet(KEY_LOCKSCREEN_WIDGET_EXCLUDED, emptySet()) ?: emptySet()
-
-    fun setLockscreenExcludedApps(packages: Set<String>) {
-        prefs.edit().putStringSet(KEY_LOCKSCREEN_WIDGET_EXCLUDED, packages).apply()
-    }
-
     var onboardingComplete: Boolean
         get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
         set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETE, value).apply()
@@ -261,23 +189,6 @@ class PrefsManager(context: Context) {
     var wallpaperPath: String?
         get() = prefs.getString(KEY_WALLPAPER_PATH, null)
         set(value) = prefs.edit().putString(KEY_WALLPAPER_PATH, value).apply()
-
-    // Hidden apps
-    fun getHiddenApps(): Set<String> {
-        return prefs.getStringSet(KEY_HIDDEN_APPS, emptySet()) ?: emptySet()
-    }
-
-    fun setHiddenApps(packages: Set<String>) {
-        prefs.edit().putStringSet(KEY_HIDDEN_APPS, packages).apply()
-    }
-
-    fun hideApp(packageName: String) {
-        setHiddenApps(getHiddenApps() + packageName)
-    }
-
-    fun unhideApp(packageName: String) {
-        setHiddenApps(getHiddenApps() - packageName)
-    }
 
     // Icon overrides: value is "file:<absolute path>" or "res:<drawable name>", null if none.
     fun getIconOverride(packageName: String): String? {
@@ -307,6 +218,16 @@ class PrefsManager(context: Context) {
 
     companion object {
         private const val KEY_APP_ORDER = "app_order"
+        private const val KEY_RENAME_PREFIX = "rename_"
+        private const val KEY_ICON_OVERRIDE_PREFIX = "icon_override_"
+        private const val KEY_SHOW_KATAPULT_ICON = "show_katapult_icon"
+        private const val KEY_HIDE_APP_NAMES = "hide_app_names"
+        private const val KEY_HIDE_ARROW_BUTTONS = "hide_arrow_buttons"
+        private const val KEY_DISABLE_HOME_EDITING = "disable_home_editing"
+        private const val KEY_HIDE_ALL_APPS_BUTTON = "hide_all_apps_button"
+        private const val KEY_SWIPE_UP_ALL_APPS = "swipe_up_all_apps"
+        private const val KEY_HOME_ISLANDS = "home_islands"
+        private const val KEY_VERTICAL_APP_GESTURES = "vertical_app_gestures"
         private const val KEY_NOTIFICATION_INDICATORS = "notification_indicators"
         private const val KEY_CLOCK_FORMAT = "clock_format"
         private const val KEY_DATE_FORMAT = "date_format"
@@ -322,37 +243,6 @@ class PrefsManager(context: Context) {
         private const val KEY_HOME_EXTRA_ROW = "home_extra_row"
         private const val KEY_DISABLE_MUSIC_WIDGET = "disable_music_widget"
         private const val KEY_WALLPAPER_PATH = "wallpaper_path"
-        private const val KEY_HIDDEN_APPS = "hidden_apps"
-        private const val KEY_RENAME_PREFIX = "rename_"
-        private const val KEY_ICON_OVERRIDE_PREFIX = "icon_override_"
-        private const val KEY_SHOW_KATAPULT_ICON = "show_katapult_icon"
-        private const val KEY_HIDE_APP_NAMES = "hide_app_names"
-        private const val KEY_HIDE_ARROW_BUTTONS = "hide_arrow_buttons"
-        private const val KEY_DISABLE_HOME_EDITING = "disable_home_editing"
-        private const val KEY_HIDE_ALL_APPS_BUTTON = "hide_all_apps_button"
-        private const val KEY_SWIPE_UP_ALL_APPS = "swipe_up_all_apps"
-        private const val KEY_HOME_ISLANDS = "home_islands"
-        private const val KEY_VERTICAL_APP_GESTURES = "vertical_app_gestures"
-        private const val KEY_LOCKSCREEN_WIDGET = "lockscreen_widget"
-        private const val KEY_LOCKSCREEN_WIDGET_Y = "lockscreen_widget_y"
-        private const val KEY_LOCKSCREEN_WIDGET_ROWS = "lockscreen_widget_rows"
-        private const val KEY_LOCKSCREEN_WIDGET_EXCLUDED = "lockscreen_widget_excluded"
-        private const val KEY_LOCKSCREEN_WIDGET_LATEST_FIRST = "lockscreen_widget_latest_first"
-        private const val KEY_SCREENSAVER_ENABLED = "screensaver_enabled"
-        private const val KEY_SCREENSAVER_ISLANDS = "screensaver_islands"
-        private const val KEY_SCREENSAVER_WALLPAPER = "screensaver_wallpaper"
-        private const val KEY_SCREENSAVER_WALLPAPER_PATH = "screensaver_wallpaper_path"
-        private const val KEY_SCREENSAVER_SHOW_CLOCK = "screensaver_show_clock"
-        private const val KEY_SCREENSAVER_SHOW_NOTIFICATIONS = "screensaver_show_notifications"
-        private const val KEY_SCREENSAVER_DOUBLE_TAP_BRIGHTNESS = "screensaver_double_tap_brightness"
-        private const val KEY_SCREENSAVER_UPDATE_MODE = "screensaver_update_mode"
-        private const val KEY_SCREENSAVER_UPDATE_MINUTES = "screensaver_update_minutes"
-        private const val KEY_SCREENSAVER_EINK_REFRESH = "screensaver_eink_refresh"
-        private const val KEY_SCREENSAVER_ON_POWER = "screensaver_on_power"
-
-        const val SCREENSAVER_MODE_AUTO = 0
-        const val SCREENSAVER_MODE_INTERVAL = 1
-        const val SCREENSAVER_MODE_STATIC = 2
         private const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
     }
 }

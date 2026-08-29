@@ -372,9 +372,7 @@ fun AllAppsScreen(viewModel: MainViewModel, iconPicker: ActivityResultLauncher<A
                 changeIconApp = menuApp
                 viewModel.contextMenuApp = null
             }
-            BottomSheetOption(stringResource(R.string.hide), icon = Icons.Rounded.VisibilityOff) {
-                viewModel.hideApp(menuApp.packageName)
-            }
+
             BottomSheetOption(stringResource(R.string.app_info), icon = Icons.Rounded.Info) {
                 viewModel.contextMenuApp = null
                 viewModel.launchIntent(context, Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
