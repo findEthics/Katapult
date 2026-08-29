@@ -77,6 +77,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
+import com.gezimos.katapult.service.TapToSleepAccessibilityService
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,7 +88,7 @@ import androidx.compose.ui.zIndex
 import com.gezimos.katapult.MainViewModel
 import com.gezimos.katapult.R
 import com.gezimos.katapult.Screen
-import com.gezimos.katapult.util.BrightnessHelper
+
 import com.gezimos.katapult.util.IconUtility
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -118,9 +119,12 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
         modifier = Modifier
             .fillMaxSize()
             .background(LocalSurface.current)
+            .pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = { TapToSleepAccessibilityService.lockScreen() })
+            }
             .pointerInput(viewModel.prefs.verticalAppGestures) {
                 // One handler for both: a single-finger swipe opens All Apps, a two-finger
-                // pinch-in (zoom out) opens the screensaver. Kept together so the pinch and
+                // Pinch handling is retained for home-screen interactions.
                 // the swipe can't fire each other.
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
@@ -137,11 +141,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                             val distance = (pressed[0].position - pressed[1].position).getDistance()
                             if (pinchStart == 0f) {
                                 pinchStart = distance
-                            } else if (!pinchFired && viewModel.prefs.screensaverEnabled && pinchStart > 80.dp.toPx() && distance < pinchStart * 0.6f) {
-                                pinchFired = true
-                                viewModel.startScreensaver(context)
-                            }
-                        } else if (!pinch) {
+                            } } else if (!pinch) {
                             val delta = if (viewModel.prefs.verticalAppGestures) {
                                 pressed[0].positionChange().y
                             } else {
@@ -181,9 +181,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                         detectTapGestures(
                             onLongPress = { showMenu = true },
                             onDoubleTap = {
-                                if (viewModel.prefs.doubleTapBrightness) {
-                                    BrightnessHelper.toggleBrightness(context, viewModel.prefs)
-                                }
+                                TapToSleepAccessibilityService.lockScreen()
                             },
                         )
                     },
@@ -198,10 +196,11 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     isCharging = viewModel.isCharging,
                     showBattery = viewModel.prefs.showBattery,
                     islandsActive = viewModel.prefs.homeIslands,
+                    clockColor = Color(0xFFFC7703),
                     onClockClick = {
                         val saved = viewModel.prefs.loadShortcut("clock")
                         if (saved != null) {
-                            viewModel.launchPackage(context, saved.first, saved.second)
+                            viewModel.launchShortcut(context, "clock")
                         } else if (!viewModel.prefs.disableHomeEditing) {
                             pickerSlot = "clock"
                         }
@@ -210,7 +209,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     onDateClick = {
                         val saved = viewModel.prefs.loadShortcut("calendar")
                         if (saved != null) {
-                            viewModel.launchPackage(context, saved.first, saved.second)
+                            viewModel.launchShortcut(context, "calendar")
                         } else if (!viewModel.prefs.disableHomeEditing) {
                             pickerSlot = "calendar"
                         }
@@ -382,10 +381,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     viewModel.navigateTo(Screen.ALL_APPS)
                 }
             }
-            BottomSheetOption(stringResource(R.string.hidden_apps), icon = Icons.Rounded.VisibilityOff) {
-                showMenu = false
-                showHiddenApps = true
-            }
+
             if (viewModel.wallpaperBitmap != null) {
                 BottomSheetOption(stringResource(R.string.clear_wallpaper), icon = Icons.Rounded.Wallpaper) {
                     showMenu = false
@@ -397,16 +393,7 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
                     showMenu = false
                 }
             }
-            if (viewModel.prefs.screensaverEnabled) {
-                BottomSheetOption(stringResource(R.string.screensaver), icon = Icons.Rounded.Bedtime) {
-                    showMenu = false
-                    viewModel.startScreensaver(context)
-                }
-            }
-            BottomSheetOption(stringResource(R.string.donate_label), icon = Icons.Rounded.FavoriteBorder) {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.buymeacoffee.com/gezimos")))
-                showMenu = false
-            }
+
         }
     }
 
@@ -429,19 +416,14 @@ fun HomeScreen(viewModel: MainViewModel, imagePicker: ActivityResultLauncher<Str
             title = title,
             onDismiss = { pickerSlot = null },
             onSelected = { app ->
-                viewModel.saveShortcut(slot, app.packageName, app.activityName)
+                viewModel.saveShortcut(slot, app.packageName, app.activityName, app.userSerial)
                 viewModel.shortcutRefresh++
                 pickerSlot = null
             },
         )
     }
 
-    if (showHiddenApps) {
-        HiddenAppsDialog(
-            viewModel = viewModel,
-            onDismiss = { showHiddenApps = false },
-        )
-    }
+
 }
 
 @Composable
@@ -494,8 +476,8 @@ private fun AppPickerDialog(
                     val app = pageApps[i]
                     val context = LocalContext.current
                     val sizePx = remember { (36 * context.resources.displayMetrics.density).toInt() }
-                    val bitmap = remember(app.packageName) {
-                        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx)
+                    val bitmap = remember(app.packageName, app.userSerial) {
+                        IconUtility.loadIcon(context, app.packageName, app.activityName, sizePx, app.userSerial)
                     }
                     Row(
                         modifier = Modifier
@@ -726,10 +708,11 @@ private fun ShortcutItem(
     val context = LocalContext.current
     val pkg = remember(refresh) { viewModel.getShortcutPackage(slot) }
     val activityName = remember(refresh) { viewModel.getShortcutActivity(slot) }
+    val userSerial = remember(refresh) { viewModel.getShortcutUserSerial(slot) }
     val label = remember(refresh) { viewModel.getShortcutLabel(slot, defaultLabel) }
     val sizePx = remember { (IconSize.value * context.resources.displayMetrics.density).toInt() }
-    val bitmap = remember(pkg, activityName, refresh) {
-        if (pkg != null) IconUtility.loadIcon(context, pkg, activityName, sizePx) else null
+    val bitmap = remember(pkg, activityName, userSerial, refresh) {
+        if (pkg != null) IconUtility.loadIcon(context, pkg, activityName, sizePx, userSerial) else null
     }
 
     val notificationCount = if (viewModel.prefs.notificationIndicators)

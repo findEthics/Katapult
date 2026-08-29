@@ -16,11 +16,11 @@ class NotificationListener : NotificationListenerService() {
 
         private val clearedKeys = ConcurrentHashMap<String, MutableSet<String>>()
 
-        // Latest notification post time per package, for the lockscreen widget sort order.
+        // Latest notification post time per package.
         private val lastPostByPkg = ConcurrentHashMap<String, Long>()
 
         var onCountsChanged: (() -> Unit)? = null
-        // Extra slots for the experimental lockscreen widget and screensaver (see .lockscreen package).
+
         var onCountsChangedExtra: (() -> Unit)? = null
         var onCountsChangedDream: (() -> Unit)? = null
         private val skipPackages = if (DeviceHelper.isMuditaKompakt()) DirectBadgeHelper.DIRECT_PACKAGES else emptySet()

@@ -82,34 +82,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var roundedIcons by mutableStateOf(prefs.roundedIcons)
     var darkMode by mutableStateOf(prefs.darkMode)
 
-    // Experimental lockscreen widget: prompt once per process to re-enable the
-    // accessibility service when it got dropped (happens after app updates).
-    var showLockscreenReEnable by mutableStateOf(false)
-    private var lockscreenReEnableChecked = false
-
-    fun checkLockscreenService(context: Context) {
-        if (lockscreenReEnableChecked) return
-        lockscreenReEnableChecked = true
-        val needsService = prefs.lockscreenWidget ||
-            (prefs.screensaverEnabled && prefs.screensaverOnPower)
-        if (needsService &&
-            !com.gezimos.katapult.lockscreen.LockscreenWidgetService.isEnabled(context)
-        ) {
-            showLockscreenReEnable = true
-        }
-    }
-
-    // Experimental screensaver: opens the full-screen screensaver activity (zero setup).
-    fun startScreensaver(context: Context) {
-        try {
-            context.startActivity(
-                Intent(context, com.gezimos.katapult.lockscreen.ScreensaverActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
-            )
-        } catch (_: Exception) {}
-    }
-
-    val gridColumns = 3
+val gridColumns = 3
     var appsPerPage by mutableIntStateOf(12)
         private set
     val totalPages: Int
@@ -213,9 +186,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadApps() {
         val currentApps = AppLoader.loadApps(ctx, showSelf = prefs.showKatapultIcon)
-        val hidden = prefs.getHiddenApps()
-        val visible = currentApps.filter { it.packageName !in hidden }
-        val renamed = visible.map { app ->
+        val renamed = currentApps.map { app ->
             val customName = prefs.getAppRename(app.packageName)
             if (customName != null) app.copy(label = customName) else app
         }
@@ -310,13 +281,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- App actions ---
 
-    fun hideApp(packageName: String) {
-        prefs.hideApp(packageName)
-        contextMenuApp = null
-        loadApps()
-    }
-
-    fun renameApp(packageName: String, newName: String) {
+fun renameApp(packageName: String, newName: String) {
         prefs.setAppRename(packageName, newName.ifBlank { null })
         contextMenuApp = null
         showRenameDialog = false
@@ -360,6 +325,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun launchApp(context: Context, app: AppModel) {
+        // Work-profile (and other non-main-user) apps cannot be launched with a
+        // plain ComponentName Intent — that only resolves within the current
+        // user. Route them through LauncherApps.startMainActivity with the
+        // correct UserHandle resolved from the stored serial number.
+        if (app.userSerial != 0L) {
+            try {
+                val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE)
+                    as? android.content.pm.LauncherApps
+                val userManager = context.getSystemService(Context.USER_SERVICE)
+                    as? android.os.UserManager
+                val handle = userManager?.getUserForSerialNumber(app.userSerial)
+                if (launcherApps != null && handle != null) {
+                    val component = ComponentName(app.packageName, app.activityName)
+                    launcherApps.startMainActivity(component, handle, null, null)
+                    (context as? Activity)?.overridePendingTransition(0, 0)
+                    return
+                }
+            } catch (_: Exception) {
+                // fall through to the legacy path below
+            }
+        }
         launchPackage(context, app.packageName, app.activityName)
     }
 
@@ -381,7 +367,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun launchShortcut(context: Context, slot: String) {
         val saved = prefs.loadShortcut(slot)
         if (saved != null) {
-            launchPackage(context, saved.first, saved.second)
+            launchApp(
+                context,
+                AppModel(
+                    packageName = saved.first,
+                    activityName = saved.second,
+                    label = getShortcutLabel(slot, ""),
+                    userSerial = prefs.loadShortcutUserSerial(slot),
+                ),
+            )
             return
         }
         val defaultPkg = getDefaultPackageForSlot(slot)
@@ -414,8 +408,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun saveShortcut(slot: String, packageName: String, activityName: String) {
-        prefs.saveShortcut(slot, packageName, activityName)
+    fun getShortcutUserSerial(slot: String): Long =
+        if (prefs.loadShortcut(slot) != null) prefs.loadShortcutUserSerial(slot) else 0L
+
+    fun saveShortcut(slot: String, packageName: String, activityName: String, userSerial: Long) {
+        prefs.saveShortcut(slot, packageName, activityName, userSerial)
     }
 
     private fun getDefaultPackageForSlot(slot: String): String? {
@@ -508,24 +505,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         wallpaperBitmap = null
     }
 
-    fun setScreensaverWallpaper(context: Context, uri: Uri) {
-        try {
-            val input = context.contentResolver.openInputStream(uri) ?: return
-            val bitmap = BitmapFactory.decodeStream(input)
-            input.close()
-            if (bitmap == null) return
-            val file = File(ctx.filesDir, "screensaver_wallpaper.png")
-            file.outputStream().use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-            prefs.screensaverWallpaperPath = file.absolutePath
-        } catch (_: Exception) {}
-    }
-
-    fun clearScreensaverWallpaper() {
-        prefs.screensaverWallpaperPath?.let { File(it).delete() }
-        prefs.screensaverWallpaperPath = null
-    }
 
     // --- Icon overrides ---
 
