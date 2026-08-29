@@ -130,13 +130,7 @@ class PrefsManager(context: Context) {
         get() = prefs.getInt(KEY_EINK_HELPER_MODE, EinkHelper.MEINK_MODE_DISABLED)
         set(value) = prefs.edit().putInt(KEY_EINK_HELPER_MODE, value).apply()
 
-    var doubleTapBrightness: Boolean
-        get() = prefs.getBoolean(KEY_DOUBLE_TAP_BRIGHTNESS, false)
-        set(value) = prefs.edit().putBoolean(KEY_DOUBLE_TAP_BRIGHTNESS, value).apply()
 
-    var lastBrightness: Int
-        get() = prefs.getInt(KEY_LAST_BRIGHTNESS, 128)
-        set(value) = prefs.edit().putInt(KEY_LAST_BRIGHTNESS, value).apply()
 
     var infiniteScroll: Boolean
         get() = prefs.getBoolean(KEY_INFINITE_SCROLL, true)
@@ -237,8 +231,8 @@ class PrefsManager(context: Context) {
         private const val KEY_HIDE_STATUS_BAR = "hide_status_bar"
         private const val KEY_EINK_REFRESH_HOME = "eink_refresh_home"
         private const val KEY_EINK_HELPER_MODE = "eink_helper_mode"
-        private const val KEY_DOUBLE_TAP_BRIGHTNESS = "double_tap_brightness"
-        private const val KEY_LAST_BRIGHTNESS = "last_brightness"
+
+
         private const val KEY_INFINITE_SCROLL = "infinite_scroll"
         private const val KEY_HOME_EXTRA_ROW = "home_extra_row"
         private const val KEY_DISABLE_MUSIC_WIDGET = "disable_music_widget"

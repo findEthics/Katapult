@@ -112,7 +112,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
     var hideStatusBar by remember { mutableStateOf(prefs.hideStatusBar) }
     var einkRefreshOnHome by remember { mutableStateOf(prefs.einkRefreshOnHome) }
     var einkHelperMode by remember { mutableIntStateOf(prefs.einkHelperMode) }
-    var doubleTapBrightness by remember { mutableStateOf(prefs.doubleTapBrightness) }
+
     var homeExtraRow by remember { mutableStateOf(prefs.homeExtraRow) }
     var disableMusicWidget by remember { mutableStateOf(prefs.disableMusicWidget) }
     var infiniteScroll by remember { mutableStateOf(prefs.infiniteScroll) }
@@ -427,17 +427,6 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     onClick = {
                         verticalAppGestures = !verticalAppGestures
                         prefs.verticalAppGestures = verticalAppGestures
-                    },
-                )
-            }
-            add {
-                SettingsToggleRow(
-                    title = stringResource(R.string.double_tap_brightness),
-                    description = stringResource(R.string.double_tap_brightness_desc),
-                    checked = doubleTapBrightness,
-                    onCheckedChange = {
-                        doubleTapBrightness = it
-                        prefs.doubleTapBrightness = it
                     },
                 )
             }

@@ -88,7 +88,7 @@ import androidx.compose.ui.zIndex
 import com.gezimos.katapult.MainViewModel
 import com.gezimos.katapult.R
 import com.gezimos.katapult.Screen
-import com.gezimos.katapult.util.BrightnessHelper
+
 import com.gezimos.katapult.util.IconUtility
 
 @OptIn(ExperimentalFoundationApi::class)
