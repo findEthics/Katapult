@@ -430,6 +430,15 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     },
                 )
             }
+            add {
+                SettingsActionRow(
+                    title = stringResource(R.string.enable_tap_to_sleep),
+                    description = stringResource(R.string.enable_tap_to_sleep_desc),
+                    onClick = {
+                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    },
+                )
+            }
 
             // --- Notifications ---
             addHeader(R.string.section_notifications)

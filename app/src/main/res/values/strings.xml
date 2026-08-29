@@ -218,4 +218,6 @@
     <string name="gestures_readme_apps">Swipe for All Apps lets you swipe up or left to open the All Apps page, depending on the gesture direction.</string>
     <string name="tap_to_sleep_accessibility_label">Tap to sleep</string>
     <string name="tap_to_sleep_accessibility_description">Lets Katapult lock the screen when you double-tap the Home screen.</string>
+    <string name="enable_tap_to_sleep">Enable tap to sleep</string>
+    <string name="enable_tap_to_sleep_desc">Open Android Accessibility settings to enable Tap to sleep.</string>
 </resources>
